@@ -1,0 +1,6 @@
+.devcontainer
+.DS_Store
+.idea
+.vscode
+.git
+*.log

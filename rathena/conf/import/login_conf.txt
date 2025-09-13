@@ -1,0 +1,3 @@
+// Store passwords as MD5 hashes instead of plain text?
+// NOTE: Will not work with clients that use <passwordencrypt>
+use_MD5_passwords: yes

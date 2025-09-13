@@ -1,0 +1,33 @@
+// Athena Character configuration file.
+
+// Note: "Comments" are all text on the right side of a double slash "//"
+// Whatever text is commented will not be parsed by the servers, and serves
+// only as information/reference.
+
+// Server Communication username and password.
+userid: ${{ secrets.RATHENA_COMMUNICATION_USER }}
+passwd: ${{ secrets.RATHENA_COMMUNICATION_PASSWORD }}
+
+// Server name, use alternative character such as ASCII 160 for spaces.
+// NOTE: Do not use spaces or any of these characters which are not allowed in
+//       Windows filenames \/:*?"<>|
+//       ... or else guild emblems won't work client-side!
+server_name: MatiMil
+
+login_ip: 127.0.0.1
+
+// The character server listens on the interface with this IP address.
+// NOTE: This allows you to run multiple servers on multiple interfaces
+// while using the same ports for each server.
+//bind_ip: 127.0.0.1
+
+// Login Server Port
+login_port: ${{ secrets.RATHENA_LOGIN_SERVER_PORT }}
+
+// Character Server IP
+// The IP address which clients will use to connect.
+// Set this to what your server's public IP address is.
+char_ip: 127.0.0.1
+
+// Character Server Port
+char_port: ${{ secrets.RATHENA_CHAR_SERVER_PORT }}
