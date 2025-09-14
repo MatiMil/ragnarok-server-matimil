@@ -39,12 +39,20 @@ jobs:
           DATABASE_VOLUME: ${{ secrets.DATABASE_VOLUME }}
           DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
         run: |
+          # Kopiraj repo na server
           rsync -avz -e "ssh -p $SERVER_SSH_PORT" ./ $SERVER_USER@$SERVER_HOST:/home/$SERVER_USER/ragnarok-server
 
-          ssh -p $SERVER_SSH_PORT $SERVER_USER@$SERVER_HOST << 'EOF'
+          # Pokreni remote komande
+          ssh -p $SERVER_SSH_PORT $SERVER_USER@$SERVER_HOST \
+            "DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME DOCKERHUB_TOKEN=$DOCKERHUB_TOKEN \
+             FLUXCP_INSTALLER_PASSWORD=$FLUXCP_INSTALLER_PASSWORD FLUXCP_TINY_MCE_KEY=$FLUXCP_TINY_MCE_KEY \
+             DATABASE_PORT=$DATABASE_PORT DATABASE_USER=$DATABASE_USER DATABASE_PASSWORD=$DATABASE_PASSWORD DATABASE_NAME=$DATABASE_NAME \
+             RATHENA_LOGIN_SERVER_PORT=$RATHENA_LOGIN_SERVER_PORT RATHENA_CHAR_SERVER_PORT=$RATHENA_CHAR_SERVER_PORT \
+             RATHENA_MAP_SERVER_PORT=$RATHENA_MAP_SERVER_PORT RATHENA_COMMUNICATION_USER=$RATHENA_COMMUNICATION_USER \
+             RATHENA_COMMUNICATION_PASSWORD=$RATHENA_COMMUNICATION_PASSWORD bash -s" << EOF
             cd /home/$SERVER_USER/ragnarok-server
 
-            echo "Starting substitution in fluxcp/, rathena/, mysql/ (excluding mysql/save, only files containing '{{')..."
+            echo "Starting substitution..."
             find fluxcp rathena mysql \
               -path "mysql/save" -prune -o \
               -type f -exec grep -l '{{' {} \; | while read -r file; do
@@ -56,7 +64,7 @@ jobs:
             envsubst < docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
 
             echo "Docker login"
-            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            echo "\$DOCKERHUB_TOKEN" | docker login -u "\$DOCKERHUB_USERNAME" --password-stdin
 
             echo "Pull latest images"
             docker compose pull
@@ -64,4 +72,4 @@ jobs:
             echo "Restart containers"
             docker compose down
             docker compose up -d
-          EOF
+EOF
