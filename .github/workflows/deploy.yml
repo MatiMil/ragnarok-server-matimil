@@ -39,12 +39,10 @@ jobs:
           DATABASE_VOLUME: ${{ secrets.DATABASE_VOLUME }}
           DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
         run: |
-          # Kopiraj repo na server
-          rsync -avz -e "ssh -p $SERVER_SSH_PORT" ./ $SERVER_USER@$SERVER_HOST:/home/$SERVER_USER/ragnarok-server-matimil
+          rsync -avz -e "ssh -p $SERVER_SSH_PORT" ./ $SERVER_USER@$SERVER_HOST:/home/$SERVER_USER/ragnarok-server
 
-          # Pokreni remote komande
           ssh -p $SERVER_SSH_PORT $SERVER_USER@$SERVER_HOST << 'EOF'
-            cd /home/$SERVER_USER/ragnarok-server-matimil
+            cd /home/$SERVER_USER/ragnarok-server
 
             echo "Starting substitution in fluxcp/, rathena/, mysql/ (excluding mysql/save, only files containing '{{')..."
             find fluxcp rathena mysql \
