@@ -5,8 +5,8 @@
 // only as information/reference.
 
 // Server Communication username and password.
-userid: ${{ secrets.RATHENA_COMMUNICATION_USER }}
-passwd: ${{ secrets.RATHENA_COMMUNICATION_PASSWORD }}
+userid: {{RATHENA_COMMUNICATION_USER}}
+passwd: {{RATHENA_COMMUNICATION_PASSWORD}}
 
 // Server name, use alternative character such as ASCII 160 for spaces.
 // NOTE: Do not use spaces or any of these characters which are not allowed in
@@ -22,7 +22,7 @@ login_ip: 127.0.0.1
 //bind_ip: 127.0.0.1
 
 // Login Server Port
-login_port: ${{ secrets.RATHENA_LOGIN_SERVER_PORT }}
+login_port: {{RATHENA_LOGIN_SERVER_PORT}}
 
 // Character Server IP
 // The IP address which clients will use to connect.
@@ -30,4 +30,4 @@ login_port: ${{ secrets.RATHENA_LOGIN_SERVER_PORT }}
 char_ip: 127.0.0.1
 
 // Character Server Port
-char_port: ${{ secrets.RATHENA_CHAR_SERVER_PORT }}
+char_port: {{RATHENA_CHAR_SERVER_PORT}}

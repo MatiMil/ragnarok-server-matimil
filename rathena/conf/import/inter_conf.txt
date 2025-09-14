@@ -1,46 +1,46 @@
 // MySQL Login server
 login_server_ip: mysql
-login_server_port: ${{ secrets.DATABASE_PORT }}
-login_server_id: ${{ secrets.DATABASE_USER }}
-login_server_pw: ${{ secrets.DATABASE_PASSWORD }}
-login_server_db: ${{ secrets.DATABASE_NAME }}
+login_server_port: {{DATABASE_PORT}}
+login_server_id: {{DATABASE_USER}}
+login_server_pw: {{DATABASE_PASSWORD}}
+login_server_db: {{DATABASE_NAME}}
 login_codepage:
 login_case_sensitive: no
 
 ipban_db_ip: mysql
-ipban_db_port: ${{ secrets.DATABASE_PORT }}
-ipban_db_id: ${{ secrets.DATABASE_USER }}
-ipban_db_pw: ${{ secrets.DATABASE_PASSWORD }}
-ipban_db_db: ${{ secrets.DATABASE_NAME }}
+ipban_db_port: {{DATABASE_PORT}}
+ipban_db_id: {{DATABASE_USER}}
+ipban_db_pw: {{DATABASE_PASSWORD}}
+ipban_db_db: {{DATABASE_NAME}}
 ipban_codepage:
 
 // MySQL Character server
 char_server_ip: mysql
-char_server_port: ${{ secrets.DATABASE_PORT }}
-char_server_id: ${{ secrets.DATABASE_USER }}
-char_server_pw: ${{ secrets.DATABASE_PASSWORD }}
-char_server_db: ${{ secrets.DATABASE_NAME }}
+char_server_port: {{DATABASE_PORT}}
+char_server_id: {{DATABASE_USER}}
+char_server_pw: {{DATABASE_PASSWORD}}
+char_server_db: {{DATABASE_NAME}}
 
 // MySQL Map Server
 map_server_ip: mysql
-map_server_port: ${{ secrets.DATABASE_PORT }}
-map_server_id: ${{ secrets.DATABASE_USER }}
-map_server_pw: ${{ secrets.DATABASE_PASSWORD }}
-map_server_db: ${{ secrets.DATABASE_NAME }}
+map_server_port: {{DATABASE_PORT}}
+map_server_id: {{DATABASE_USER}}
+map_server_pw: {{DATABASE_PASSWORD}}
+map_server_db: {{DATABASE_NAME}}
 
 // MySQL Web Server
 web_server_ip: mysql
-web_server_port: ${{ secrets.DATABASE_PORT }}
-web_server_id: ${{ secrets.DATABASE_USER }}
-web_server_pw: ${{ secrets.DATABASE_PASSWORD }}
-web_server_db: ${{ secrets.DATABASE_NAME }}
+web_server_port: {{DATABASE_PORT}}
+web_server_id: {{DATABASE_USER}}
+web_server_pw: {{DATABASE_PASSWORD}}
+web_server_db: {{DATABASE_NAME}}
 
 // MySQL Log Database
 log_db_ip: mysql
-log_db_port: ${{ secrets.DATABASE_PORT }}
-log_db_id: ${{ secrets.DATABASE_USER }}
-log_db_pw: ${{ secrets.DATABASE_PASSWORD }}
-log_db_db: ${{ secrets.DATABASE_NAME }}
+log_db_port: {{DATABASE_PORT}}
+log_db_id: {{DATABASE_USER}}
+log_db_pw: {{DATABASE_PASSWORD}}
+log_db_db: {{DATABASE_NAME}}
 log_codepage:
 log_login_db: loginlog
 

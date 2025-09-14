@@ -13,9 +13,9 @@ return array(
 				// -- 'Convert' option only works when 'Encoding' option is specified and iconv (http://php.net/iconv) is available.
 				// -- It specifies the encoding to convert your MySQL data to on the website (most likely needs to be utf8)
 			'Hostname'   => 'mysql',
-			'Username'   => '${{ secrets.DATABASE_USER }}',
-			'Password'   => '${{ secrets.DATABASE_PASSWORD }}',
-			'Database'   => '${{ secrets.DATABASE_NAME }}',
+			'Username'   => '{{DATABASE_USER}}',
+			'Password'   => '{{DATABASE_PASSWORD}}',
+			'Database'   => '{{DATABASE_NAME}}',
 			'Persistent' => true,
 			'Timezone'   => null // Example: '+0:00' is UTC.
 			// The possible values of 'Timezone' is as documented from the MySQL website:
@@ -33,24 +33,24 @@ return array(
 				// -- 'Convert' option only works when 'Encoding' option is specified and iconv (http://php.net/iconv) is available.
 				// -- It specifies the encoding to convert your MySQL data to on the website (most likely needs to be utf8)
 			'Hostname'   => 'mysql',
-			'Username'   => '${{ secrets.DATABASE_USER }}',
-			'Password'   => '${{ secrets.DATABASE_PASSWORD }}',
-			'Database'   => '${{ secrets.DATABASE_NAME }}',
+			'Username'   => '{{DATABASE_USER}}',
+			'Password'   => '{{DATABASE_PASSWORD}}',
+			'Database'   => '{{DATABASE_NAME}}',
 			'Persistent' => true,
 			'Timezone'   => null // Possible values is as described in the comment in DbConfig.
 		),
 		// Web server configuration.
 		'WebDbConfig'    => array(
 			'Hostname'   => 'mysql',
-			'Username'   => '${{ secrets.DATABASE_USER }}',
-			'Password'   => '${{ secrets.DATABASE_PASSWORD }}',
-			'Database'   => '${{ secrets.DATABASE_NAME }}',
+			'Username'   => '{{DATABASE_USER}}',
+			'Password'   => '{{DATABASE_PASSWORD}}',
+			'Database'   => '{{DATABASE_NAME}}',
 			'Persistent' => true
 		),
 		// Login server configuration.
 		'LoginServer'    => array(
 			'Address'  => 'rathena',
-			'Port'     => '${{ secrets.RATHENA_LOGIN_SERVER_PORT }}',
+			'Port'     => '{{RATHENA_LOGIN_SERVER_PORT}}',
 			'UseMD5'   => true,
 			'NoCase'   => true, // rA account case-sensitivity; Default: Case-INsensitive (true).
 			'GroupID'  => 0,    // Default account group ID during registration.
@@ -111,11 +111,11 @@ return array(
 				),
 				'CharServer'      => array(
 					'Address'     => 'rathena',
-					'Port'        => '${{ secrets.RATHENA_CHAR_SERVER_PORT }}'
+					'Port'        => '{{RATHENA_CHAR_SERVER_PORT}}'
 				),
 				'MapServer'       => array(
 					'Address'     => 'rathena',
-					'Port'        => '${{ secrets.RATHENA_MAP_SERVER_PORT }}'
+					'Port'        => '{{RATHENA_MAP_SERVER_PORT}}'
 				),
 				// -- WoE days and times --
 				// First parameter: Starding day 0=Sunday / 1=Monday / 2=Tuesday / 3=Wednesday / 4=Thursday / 5=Friday / 6=Saturday

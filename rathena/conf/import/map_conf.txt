@@ -1,5 +1,5 @@
-userid: ${{ secrets.RATHENA_COMMUNICATION_USER }}
-passwd: ${{ secrets.RATHENA_COMMUNICATION_PASSWORD }}
+userid: {{RATHENA_COMMUNICATION_USER}}
+passwd: {{RATHENA_COMMUNICATION_PASSWORD}}
 
 / Character Server IP
 // The map server connects to the character server using this IP address.
@@ -13,7 +13,7 @@ char_ip: 127.0.0.1
 //bind_ip: 127.0.0.1
 
 // Character Server Port
-char_port: ${{ secrets.RATHENA_CHAR_SERVER_PORT }}
+char_port: {{RATHENA_CHAR_SERVER_PORT}}
 
 // Map Server IP
 // The IP address which clients will use to connect.
@@ -21,4 +21,4 @@ char_port: ${{ secrets.RATHENA_CHAR_SERVER_PORT }}
 map_ip: 127.0.0.1
 
 // Map Server Port
-map_port: ${{ secrets.RATHENA_MAP_SERVER_PORT }}
+map_port: {{RATHENA_MAP_SERVER_PORT}}

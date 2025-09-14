@@ -1,0 +1,98 @@
+name: Build, Push & Deploy Ragnarok Server
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push rAthena image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./rathena
+          file: ./rathena/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/rathena:latest
+
+      - name: Build and push FluxCP image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./fluxcp
+          file: ./fluxcp/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/fluxcp:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy repo to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          source: "."
+          target: "~/ragnarok-server"
+
+      - name: Substitute secrets in configs
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          script: |
+            cd ~/ragnarok-server
+
+            # Lista svih file-ova gdje treba substitution
+            FILES=$(find fluxcp rathena mysql . -maxdepth 2 -type f \( -name "*.php" -o -name "*.txt" -o -name "*.conf" -o -name "*.yml" -o -name "*.yaml" -o -name "docker-compose.yml" \))
+
+            for f in $FILES; do
+              echo "Substituting in $f"
+              sed -i \
+                -e "s|{{FLUXCP_INSTALLER_PASSWORD}}|${{ secrets.FLUXCP_INSTALLER_PASSWORD }}|g" \
+                -e "s|{{FLUXCP_TINY_MCE_KEY}}|${{ secrets.FLUXCP_TINY_MCE_KEY }}|g" \
+                -e "s|{{DATABASE_PORT}}|${{ secrets.DATABASE_PORT }}|g" \
+                -e "s|{{DATABASE_USER}}|${{ secrets.DATABASE_USER }}|g" \
+                -e "s|{{DATABASE_PASSWORD}}|${{ secrets.DATABASE_PASSWORD }}|g" \
+                -e "s|{{DATABASE_NAME}}|${{ secrets.DATABASE_NAME }}|g" \
+                -e "s|{{RATHENA_LOGIN_SERVER_PORT}}|${{ secrets.RATHENA_LOGIN_SERVER_PORT }}|g" \
+                -e "s|{{RATHENA_CHAR_SERVER_PORT}}|${{ secrets.RATHENA_CHAR_SERVER_PORT }}|g" \
+                -e "s|{{RATHENA_MAP_SERVER_PORT}}|${{ secrets.RATHENA_MAP_SERVER_PORT }}|g" \
+                -e "s|{{RATHENA_COMMUNICATION_USER}}|${{ secrets.RATHENA_COMMUNICATION_USER }}|g" \
+                -e "s|{{RATHENA_COMMUNICATION_PASSWORD}}|${{ secrets.RATHENA_COMMUNICATION_PASSWORD }}|g" \
+                "$f"
+            done
+
+      - name: Deploy with docker-compose
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          script: |
+            cd ~/ragnarok-server
+            docker compose pull
+            docker compose down
+            docker compose up -d

@@ -4,7 +4,7 @@
 return array(
 	'ServerAddress'				=> 'fluxcp',				// This value is the hostname:port under which Flux runs. (e.g., example.com or example.com:80)
 	'BaseURI'					=> '',						// The base URI is the base web root on which your application lies.
-	'InstallerPassword'			=> '${{ secrets.FLUXCP_INSTALLER_PASSWORD }}',		// Installer/updater password.
+	'InstallerPassword'			=> '{{FLUXCP_INSTALLER_PASSWORD}}',		// Installer/updater password.
 	'RequireOwnership'			=> true,					// Require the executing user to be owner of the FLUX_ROOT/data/ directory tree? (Better for security)
 															// WARNING: This will be mostly IGNORED on non-POSIX-compliant OSes (e.g. Windows).
 	'DefaultLoginGroup'			=> null,
@@ -243,7 +243,7 @@ return array(
     'DiscordSendOnMarketing'    => true, // Sends a channel message when someone uses the Send Email feature in FluxCP
 	'DiscordSendOnErrorException' => true, // Sends a channel message when an exception is thrown
 
-	'TinyMCEKey'				=> '${{ secrets.FLUXCP_TINY_MCE_KEY }}',				// Register for a key at https://www.tiny.cloud/my-account/dashboard/
+	'TinyMCEKey'				=> '{{FLUXCP_TINY_MCE_KEY}}',				// Register for a key at https://www.tiny.cloud/my-account/dashboard/
 
 	// These are the main menu items that should be displayed by themes.
 	// They route to modules and actions.  Whether they are displayed or
