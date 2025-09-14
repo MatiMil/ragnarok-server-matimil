@@ -27,16 +27,21 @@ jobs:
           RATHENA_COMMUNICATION_USER: ${{ secrets.RATHENA_COMMUNICATION_USER }}
           RATHENA_COMMUNICATION_PASSWORD: ${{ secrets.RATHENA_COMMUNICATION_PASSWORD }}
         run: |
-          echo "Substituting in fluxcp/, rathena/, mysql/ (excluding mysql/save)..."
-          find fluxcp rathena mysql \
-            -path "mysql/save" -prune -o \
-            -type f -exec grep -l '{{' {} \; | while read -r file; do
-              echo "Substituting in $file"
-              envsubst < "$file" > "$file.tmp" && mv "$file.tmp" "$file"
-            done
+          echo "Substituting secrets in fluxcp/, rathena/, mysql/ (excluding mysql/save)..."
 
-          echo "Substituting in docker-compose.yml"
-          envsubst < docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
+          for var in FLUXCP_INSTALLER_PASSWORD FLUXCP_TINY_MCE_KEY DATABASE_PORT DATABASE_USER DATABASE_PASSWORD DATABASE_NAME DATABASE_VOLUME DATABASE_ROOT_PASSWORD RATHENA_LOGIN_SERVER_PORT RATHENA_CHAR_SERVER_PORT RATHENA_MAP_SERVER_PORT RATHENA_COMMUNICATION_USER RATHENA_COMMUNICATION_PASSWORD; do
+            value=$(printenv $var)
+
+            # skip empty secrets
+            if [ -n "$value" ]; then
+              echo "Replacing {{$var}}"
+              find fluxcp rathena mysql \
+                -path "mysql/save" -prune -o \
+                -type f -print0 | xargs -0 sed -i "s|{{$var}}|$value|g"
+
+              sed -i "s|{{$var}}|$value|g" docker-compose.yml
+            fi
+          done
 
       - name: Setup SSH
         run: |
@@ -47,12 +52,16 @@ jobs:
 
       - name: Copy files to server
         run: |
-          rsync -avz -e "ssh -p ${{ secrets.SERVER_SSH_PORT }}" ./ \
+          rsync -avz \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            -e "ssh -p ${{ secrets.SERVER_SSH_PORT }}" ./ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/${{ secrets.SERVER_USER }}/ragnarok-server
+
 
       - name: Restart containers on server
         run: |
-          ssh -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          ssh -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
             cd /home/${SERVER_USER}/ragnarok-server
 
             echo "Docker login"
@@ -64,7 +73,7 @@ jobs:
             echo "Restart containers"
             docker compose down
             docker compose up -d
-            EOF
+          EOF
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
