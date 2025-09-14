@@ -11,14 +11,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy to server
+      - name: Substitute secrets locally
         env:
           FLUXCP_INSTALLER_PASSWORD: ${{ secrets.FLUXCP_INSTALLER_PASSWORD }}
           FLUXCP_TINY_MCE_KEY: ${{ secrets.FLUXCP_TINY_MCE_KEY }}
@@ -26,45 +19,44 @@ jobs:
           DATABASE_USER: ${{ secrets.DATABASE_USER }}
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          DATABASE_VOLUME: ${{ secrets.DATABASE_VOLUME }}
+          DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
           RATHENA_LOGIN_SERVER_PORT: ${{ secrets.RATHENA_LOGIN_SERVER_PORT }}
           RATHENA_CHAR_SERVER_PORT: ${{ secrets.RATHENA_CHAR_SERVER_PORT }}
           RATHENA_MAP_SERVER_PORT: ${{ secrets.RATHENA_MAP_SERVER_PORT }}
           RATHENA_COMMUNICATION_USER: ${{ secrets.RATHENA_COMMUNICATION_USER }}
           RATHENA_COMMUNICATION_PASSWORD: ${{ secrets.RATHENA_COMMUNICATION_PASSWORD }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
-          DATABASE_VOLUME: ${{ secrets.DATABASE_VOLUME }}
-          DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
         run: |
-          # Kopiraj repo na server
-          rsync -avz -e "ssh -p $SERVER_SSH_PORT" ./ $SERVER_USER@$SERVER_HOST:/home/$SERVER_USER/ragnarok-server
+          echo "Substituting in fluxcp/, rathena/, mysql/ (excluding mysql/save)..."
+          find fluxcp rathena mysql \
+            -path "mysql/save" -prune -o \
+            -type f -exec grep -l '{{' {} \; | while read -r file; do
+              echo "Substituting in $file"
+              envsubst < "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+            done
 
-          # Pokreni remote komande
-          ssh -p $SERVER_SSH_PORT $SERVER_USER@$SERVER_HOST \
-            "DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME DOCKERHUB_TOKEN=$DOCKERHUB_TOKEN \
-             FLUXCP_INSTALLER_PASSWORD=$FLUXCP_INSTALLER_PASSWORD FLUXCP_TINY_MCE_KEY=$FLUXCP_TINY_MCE_KEY \
-             DATABASE_PORT=$DATABASE_PORT DATABASE_USER=$DATABASE_USER DATABASE_PASSWORD=$DATABASE_PASSWORD DATABASE_NAME=$DATABASE_NAME \
-             RATHENA_LOGIN_SERVER_PORT=$RATHENA_LOGIN_SERVER_PORT RATHENA_CHAR_SERVER_PORT=$RATHENA_CHAR_SERVER_PORT \
-             RATHENA_MAP_SERVER_PORT=$RATHENA_MAP_SERVER_PORT RATHENA_COMMUNICATION_USER=$RATHENA_COMMUNICATION_USER \
-             RATHENA_COMMUNICATION_PASSWORD=$RATHENA_COMMUNICATION_PASSWORD bash -s" << EOF
-            cd /home/$SERVER_USER/ragnarok-server
+          echo "Substituting in docker-compose.yml"
+          envsubst < docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
 
-            echo "Starting substitution..."
-            find fluxcp rathena mysql \
-              -path "mysql/save" -prune -o \
-              -type f -exec grep -l '{{' {} \; | while read -r file; do
-                echo "Substituting in \$file"
-                envsubst < "\$file" > "\$file.tmp" && mv "\$file.tmp" "\$file"
-              done
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-            echo "Substituting in docker-compose.yml"
-            envsubst < docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
+      - name: Copy files to server
+        run: |
+          rsync -avz -e "ssh -p ${{ secrets.SERVER_SSH_PORT }}" ./ \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/${{ secrets.SERVER_USER }}/ragnarok-server
+
+      - name: Restart containers on server
+        run: |
+          ssh -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /home/${SERVER_USER}/ragnarok-server
 
             echo "Docker login"
-            echo "\$DOCKERHUB_TOKEN" | docker login -u "\$DOCKERHUB_USERNAME" --password-stdin
+            echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
             echo "Pull latest images"
             docker compose pull
@@ -73,3 +65,7 @@ jobs:
             docker compose down
             docker compose up -d
             EOF
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
