@@ -1,44 +1,11 @@
-name: Build, Push & Deploy Ragnarok Server
+name: Deploy Ragnarok Server
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub (push)
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-      - name: Build and push rAthena image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./rathena
-          file: ./rathena/Dockerfile
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/rathena:latest
-
-      - name: Build and push FluxCP image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./fluxcp
-          file: ./fluxcp/Dockerfile
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/fluxcp:latest
-
   deploy:
     runs-on: ubuntu-latest
-    needs: build-and-push
 
     steps:
       - name: Checkout repository
@@ -54,7 +21,7 @@ jobs:
           source: "."
           target: "~/ragnarok-server"
 
-      - name: Substitute secrets in config files, docker-login and deploy
+      - name: Substitute secrets, login Docker, restart containers
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -65,12 +32,10 @@ jobs:
             set -euo pipefail
             cd ~/ragnarok-server
 
-            echo "Starting substitution in fluxcp/, rathena/, mysql/ (files containing '{{')..."
+            echo "Starting substitution in fluxcp/, rathena/, mysql/ (excluding mysql/save, only files containing '{{')..."
 
-            # Directories to process
             for dir in fluxcp rathena mysql; do
               if [ -d "$dir" ]; then
-                # find files and process only those containing {{
                 find "$dir" -type f -not -path "mysql/save/*" -print0 | while IFS= read -r -d '' file; do
                   if grep -Iq '{{' "$file"; then
                     echo "Substituting in $file"
@@ -94,7 +59,6 @@ jobs:
               fi
             done
 
-            # Also substitute in root docker-compose.yml if present
             if [ -f docker-compose.yml ]; then
               echo "Substituting in docker-compose.yml"
               sed -i \
@@ -114,8 +78,7 @@ jobs:
                 docker-compose.yml
             fi
 
-            echo "Logging in to Docker Hub on the server to allow pulling private images..."
-            # login so docker compose pull can access private images
+            echo "Logging in to Docker Hub..."
             echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login --username "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
             echo "Pulling images and restarting containers..."
