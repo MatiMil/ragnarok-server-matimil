@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
+      - name: Log in to Docker Hub (push)
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
@@ -54,7 +54,7 @@ jobs:
           source: "."
           target: "~/ragnarok-server"
 
-      - name: Substitute secrets in configs
+      - name: Substitute secrets in config files, docker-login and deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -62,13 +62,41 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_SSH_PORT }}
           script: |
+            set -euo pipefail
             cd ~/ragnarok-server
 
-            # Lista svih file-ova gdje treba substitution
-            FILES=$(find fluxcp rathena mysql . -maxdepth 2 -type f \( -name "*.php" -o -name "*.txt" -o -name "*.conf" -o -name "*.yml" -o -name "*.yaml" -o -name "docker-compose.yml" \))
+            echo "Starting substitution in fluxcp/, rathena/, mysql/ (files containing '{{')..."
 
-            for f in $FILES; do
-              echo "Substituting in $f"
+            # Directories to process
+            for dir in fluxcp rathena mysql; do
+              if [ -d "$dir" ]; then
+                # find files and process only those containing {{
+                find "$dir" -type f -print0 | while IFS= read -r -d '' file; do
+                  if grep -Iq '{{' "$file"; then
+                    echo "Substituting in $file"
+                    sed -i \
+                      -e "s|{{FLUXCP_INSTALLER_PASSWORD}}|${{ secrets.FLUXCP_INSTALLER_PASSWORD }}|g" \
+                      -e "s|{{FLUXCP_TINY_MCE_KEY}}|${{ secrets.FLUXCP_TINY_MCE_KEY }}|g" \
+                      -e "s|{{DATABASE_PORT}}|${{ secrets.DATABASE_PORT }}|g" \
+                      -e "s|{{DATABASE_USER}}|${{ secrets.DATABASE_USER }}|g" \
+                      -e "s|{{DATABASE_PASSWORD}}|${{ secrets.DATABASE_PASSWORD }}|g" \
+                      -e "s|{{DATABASE_NAME}}|${{ secrets.DATABASE_NAME }}|g" \
+                      -e "s|{{DATABASE_VOLUME}}|${{ secrets.DATABASE_VOLUME }}|g" \
+                      -e "s|{{DATABASE_ROOT_PASSWORD}}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
+                      -e "s|{{RATHENA_LOGIN_SERVER_PORT}}|${{ secrets.RATHENA_LOGIN_SERVER_PORT }}|g" \
+                      -e "s|{{RATHENA_CHAR_SERVER_PORT}}|${{ secrets.RATHENA_CHAR_SERVER_PORT }}|g" \
+                      -e "s|{{RATHENA_MAP_SERVER_PORT}}|${{ secrets.RATHENA_MAP_SERVER_PORT }}|g" \
+                      -e "s|{{RATHENA_COMMUNICATION_USER}}|${{ secrets.RATHENA_COMMUNICATION_USER }}|g" \
+                      -e "s|{{RATHENA_COMMUNICATION_PASSWORD}}|${{ secrets.RATHENA_COMMUNICATION_PASSWORD }}|g" \
+                      "$file"
+                  fi
+                done
+              fi
+            done
+
+            # Also substitute in root docker-compose.yml if present
+            if [ -f docker-compose.yml ]; then
+              echo "Substituting in docker-compose.yml"
               sed -i \
                 -e "s|{{FLUXCP_INSTALLER_PASSWORD}}|${{ secrets.FLUXCP_INSTALLER_PASSWORD }}|g" \
                 -e "s|{{FLUXCP_TINY_MCE_KEY}}|${{ secrets.FLUXCP_TINY_MCE_KEY }}|g" \
@@ -76,23 +104,23 @@ jobs:
                 -e "s|{{DATABASE_USER}}|${{ secrets.DATABASE_USER }}|g" \
                 -e "s|{{DATABASE_PASSWORD}}|${{ secrets.DATABASE_PASSWORD }}|g" \
                 -e "s|{{DATABASE_NAME}}|${{ secrets.DATABASE_NAME }}|g" \
+                -e "s|{{DATABASE_VOLUME}}|${{ secrets.DATABASE_VOLUME }}|g" \
+                -e "s|{{DATABASE_ROOT_PASSWORD}}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
                 -e "s|{{RATHENA_LOGIN_SERVER_PORT}}|${{ secrets.RATHENA_LOGIN_SERVER_PORT }}|g" \
                 -e "s|{{RATHENA_CHAR_SERVER_PORT}}|${{ secrets.RATHENA_CHAR_SERVER_PORT }}|g" \
                 -e "s|{{RATHENA_MAP_SERVER_PORT}}|${{ secrets.RATHENA_MAP_SERVER_PORT }}|g" \
                 -e "s|{{RATHENA_COMMUNICATION_USER}}|${{ secrets.RATHENA_COMMUNICATION_USER }}|g" \
                 -e "s|{{RATHENA_COMMUNICATION_PASSWORD}}|${{ secrets.RATHENA_COMMUNICATION_PASSWORD }}|g" \
-                "$f"
-            done
+                docker-compose.yml
+            fi
 
-      - name: Deploy with docker-compose
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_SSH_PORT }}
-          script: |
-            cd ~/ragnarok-server
+            echo "Logging in to Docker Hub on the server to allow pulling private images..."
+            # login so docker compose pull can access private images
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login --username "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+            echo "Pulling images and restarting containers..."
             docker compose pull
             docker compose down
             docker compose up -d
+
+            echo "Deploy finished."
