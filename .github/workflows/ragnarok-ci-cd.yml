@@ -71,7 +71,7 @@ jobs:
             for dir in fluxcp rathena mysql; do
               if [ -d "$dir" ]; then
                 # find files and process only those containing {{
-                find "$dir" -type f -print0 | while IFS= read -r -d '' file; do
+                find "$dir" -type f -not -path "mysql/save/*" -print0 | while IFS= read -r -d '' file; do
                   if grep -Iq '{{' "$file"; then
                     echo "Substituting in $file"
                     sed -i \
