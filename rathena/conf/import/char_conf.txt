@@ -31,3 +31,6 @@ char_ip: 127.0.0.1
 
 // Character Server Port
 char_port: {{RATHENA_CHAR_SERVER_PORT}}
+
+// Disable pin
+pincode_enabled: no
