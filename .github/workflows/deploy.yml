@@ -55,6 +55,7 @@ jobs:
           rsync -avz \
             --exclude='.git/' \
             --exclude='.github/' \
+            --exclude='.gitignore' \
             -e "ssh -p ${{ secrets.SERVER_SSH_PORT }}" ./ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/${{ secrets.SERVER_USER }}/ragnarok-server
 
