@@ -50,6 +50,19 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Stop the containers on server
+        run: |
+          ssh -p ${{ secrets.SERVER_SSH_PORT }} ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+            cd /home/${SERVER_USER}/ragnarok-server
+
+            echo "Stopping containers"
+            docker compose down
+          EOF
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+
       - name: Copy files to server
         run: |
           rsync -avz \
@@ -73,7 +86,6 @@ jobs:
             docker compose pull
 
             echo "Restart containers"
-            docker compose down
             docker compose up -d
           EOF
         env:
