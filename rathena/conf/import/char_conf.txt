@@ -27,7 +27,7 @@ login_port: {{RATHENA_LOGIN_SERVER_PORT}}
 // Character Server IP
 // The IP address which clients will use to connect.
 // Set this to what your server's public IP address is.
-char_ip: 127.0.0.1
+char_ip: ragnarok.matimil.de
 
 // Character Server Port
 char_port: {{RATHENA_CHAR_SERVER_PORT}}
